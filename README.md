@@ -4,8 +4,8 @@
 
 **Знакомый тетрис. Пиксели Game Boy. Новые цели.**
 
-Русская версия с оригинальным оформлением, спринтом на 40 линий,<br>
-испытаниями и комбо — в одном EXE.
+Русская версия, спринтом на 40 линий,<br>
+испытаниями и комбо.
 
 ![Platform](https://img.shields.io/badge/Windows-x64-306850?style=flat-square)
 ![Runtime](https://img.shields.io/badge/.NET-8-306850?style=flat-square)
