@@ -1,2 +1,0 @@
-# RAINBOW-TETRISGB
-тест
