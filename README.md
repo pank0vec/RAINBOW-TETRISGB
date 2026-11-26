@@ -133,36 +133,6 @@ Python-версия использует отдельную папку:
 
 Результат: **`dist/Tetris-Pygame-RU.exe`**. Файл включает Python, Pygame и ресурсы. Собирать Windows-версию нужно на Windows.
 
-## Проверки
-
-Тесты логики и сохранений:
-
-```powershell
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
-
-Проверки интерфейса, ввода, звуковых ресурсов и отрисовки:
-
-```powershell
-.venv\Scripts\python.exe main.py --headless --self-test --data-dir test-data --capture test-data/screenshots
-```
-
-Создаются кадры экранов и `report.json`. Проверяются переходы меню, запас, пауза и потеря фокуса, цветные блоки, завершение спринта через очистку реального поля, сохранение и загрузка рекорда, настройки и кнопка «Играть» мышью.
-
-Тот же тест можно запустить у готового EXE:
-
-```powershell
-.\dist\Tetris-Pygame-RU.exe --headless --self-test --data-dir test-data --capture test-data/screenshots
-```
-
-Для одного кадра главного меню:
-
-```powershell
-.venv\Scripts\python.exe main.py --headless --capture menu.png --data-dir test-data
-```
-
-Автоматические проверки подтверждают загрузку и декодирование аудио; прослушивание звука и ручная проверка физического геймпада не выполнялись.
-
 ## Структура проекта
 
 ```text
@@ -176,7 +146,3 @@ assets/                     Изображения, шрифт, музыка и 
 tests/test_engine.py        Проверки логики и сохранений
 GameboyTetris-Pygame.spec    Сборка одного EXE через PyInstaller
 ```
-
-## Авторство
-
-Основа графики, музыки и звуков — **Gustav / LordGurr**, проект [GameboyTetris](https://github.com/LordGurr/GameboyTetris). Эта копия заново реализует игровую логику и интерфейс на Python / Pygame и сохраняет визуальные материалы исходного проекта. Новые исходники написаны без комментариев, как и в подготовленной C#-копии.
