@@ -1,3 +1,6 @@
+# Запуск программы. Читает параметры запуска и выбирает: играть, сохранить кадр или провести
+# проверки.
+
 import argparse
 import os
 
@@ -6,6 +9,7 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 from tetris.app import App
 
 
+# Запуск приложения или встроенных проверок.
 def main():
     parser = argparse.ArgumentParser(description="Game Boy Tetris на Python / Pygame")
     parser.add_argument("--data-dir")

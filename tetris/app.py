@@ -1,3 +1,5 @@
+# Окно и управление. События Pygame, игровой цикл, интерфейс и связь между частями проекта.
+
 import json
 from pathlib import Path
 import sys
@@ -9,11 +11,14 @@ from .engine import CHALLENGES, NAMES, Game, Menu, Mode, Piece, SHAPES, format_t
 from .storage import Store
 
 
+# Окно, кнопки, меню и связь с игровыми правилами.
 class App:
+    # Подготовка окна и всех частей приложения.
     def __init__(self, directory=None):
         pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.init()
         pygame.display.set_caption("Тетрис — Python / Pygame")
+        # Настройки, размер и окно.
         self.store = Store(directory)
         self.settings = self.store.settings
         self.window_size = (160 * self.settings["scale"], 144 * self.settings["scale"])
@@ -23,6 +28,7 @@ class App:
         except pygame.error:
             pass
         self.canvas = pygame.Surface((640, 576))
+        # Картинки, звук и меню.
         self.assets = Assets()
         self.audio = Audio(self.settings)
         self.menu = Menu()
@@ -42,21 +48,26 @@ class App:
         self._refresh_joysticks()
         self.audio.sync(self.scene)
 
+    # Цвета выбранной палитры.
     @property
     def palette(self):
         return PALETTES[self.settings["palette"]]
 
+    # Рисование залитого прямоугольника.
     def box(self, x, y, width, height, color):
         pygame.draw.rect(self.canvas, color, (round(x * 4), round(y * 4), round(width * 4), round(height * 4)))
 
+    # Рисование пиксельной надписи.
     def label(self, text, x, y, color=None, scale=0.20):
         self.assets.font.draw(self.canvas, text, x, y, color or self.palette[3], scale)
 
+    # Рамки панелей и всплывающих окон.
     def frame(self, x, y, width, height, fill=BLACK, popup=False):
         colors = ((7, 24, 33), (255, 201, 14), (255, 242, 0), fill) if popup else ((255, 201, 14), (255, 174, 1), fill)
         for inset, color in enumerate(colors):
             self.box(x + inset, y + inset, width - inset * 2, height - inset * 2, color)
 
+    # Заголовок пункта со стрелкой и подчёркиванием.
     def title_label(self, text, y, scale, selected=False):
         width = len(text) * 6 * scale * 3.5
         x = (160 - width) / 2
@@ -65,6 +76,7 @@ class App:
             self.label(">", x - 9, y, WHITE, scale)
         self.box(x, y + 7 * scale * 3.5 + 1, width, 1, GOLD)
 
+    # Запуск партии с выбранным режимом.
     def start(self):
         self.game = Game(self.menu.mode, self.menu.challenge,
                          lock_delay=self.settings["lock_delay"], hold=self.settings["hold"])
@@ -73,12 +85,14 @@ class App:
         self.repeat_direction = 0
         self.audio.sync(self.scene)
 
+    # Возврат в главное меню.
     def main_menu(self):
         self.scene = "main"
         self.menu.page = "main"
         self.held_keys.clear()
         self.audio.sync(self.scene)
 
+    # Переход по выбранному пункту меню.
     def confirm_menu(self):
         command = self.menu.confirm()
         if command == "start":
@@ -89,6 +103,7 @@ class App:
             self.scene = self.menu.page
         self.audio.play("menu")
 
+    # Переключение окна и полного экрана.
     def toggle_fullscreen(self):
         if self.fullscreen:
             self.screen = pygame.display.set_mode(self.window_size, pygame.RESIZABLE)
@@ -97,6 +112,7 @@ class App:
             self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.fullscreen = not self.fullscreen
 
+    # Изменение масштаба окна.
     def resize_scale(self, direction):
         self.settings["scale"] = max(2, min(8, self.settings["scale"] + direction))
         logical_width = 153 if self.scene in ("playing", "results") else 160
@@ -104,6 +120,7 @@ class App:
         if not self.fullscreen:
             self.screen = pygame.display.set_mode(self.window_size, pygame.RESIZABLE)
 
+    # Переключение игровых настроек.
     def change_setting(self, direction=1):
         keys = ("ghost", "modern", "hold", "sound", "music", "lock_delay", "colors")
         key = keys[self.setting_index]
@@ -111,6 +128,7 @@ class App:
         self.audio.sync(self.scene)
         self.store.save()
 
+    # Изменение палитры и оформления.
     def change_display(self, direction):
         keys = ("palette", "grid", "border", "overlay", "scale")
         key = keys[self.display_index]
@@ -122,6 +140,7 @@ class App:
             self.settings[key] = not self.settings[key]
         self.store.save()
 
+    # Действия клавиш на каждом экране.
     def key(self, key):
         if key == pygame.K_F11:
             self.toggle_fullscreen()
@@ -135,6 +154,7 @@ class App:
             self.store.save()
             return
         if key == pygame.K_HOME:
+            # Клавиши оформления.
             if self.scene == "display":
                 self.scene = self.return_scene
             else:
@@ -143,6 +163,7 @@ class App:
                     self.game.pause()
                 self.scene = "display"
             return
+        # Клавиши главного меню и выбора режима.
         if self.scene in ("main", "modes"):
             if key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
                 self.menu.move(-1 if key in (pygame.K_UP, pygame.K_w) else 1)
@@ -157,6 +178,7 @@ class App:
                     self.running = False
                 self.scene = self.menu.page
             return
+        # Клавиши настроек.
         if self.scene == "settings":
             if key in (pygame.K_UP, pygame.K_DOWN):
                 self.setting_index = (self.setting_index + (-1 if key == pygame.K_UP else 1)) % 7
@@ -166,6 +188,7 @@ class App:
                 self.store.save()
                 self.main_menu()
             return
+        # Клавиши оформления.
         if self.scene == "display":
             if key in (pygame.K_UP, pygame.K_DOWN):
                 self.display_index = (self.display_index + (-1 if key == pygame.K_UP else 1)) % 5
@@ -175,7 +198,9 @@ class App:
                 self.store.save()
                 self.scene = self.return_scene
             return
+        # Клавиши экрана результата.
         if self.scene == "results":
+            # Перезапуск, пауза и управление фигурой.
             if key == pygame.K_r:
                 self.start()
             elif key in (pygame.K_RETURN, pygame.K_ESCAPE, pygame.K_SPACE):
@@ -183,6 +208,7 @@ class App:
             return
         if self.scene != "playing":
             return
+        # Перезапуск, пауза и управление фигурой.
         if key == pygame.K_r:
             self.start()
         elif key in (pygame.K_RETURN, pygame.K_p):
@@ -209,6 +235,7 @@ class App:
             elif key == pygame.K_SPACE and self.settings["modern"]:
                 self.game.hard_drop()
 
+    # Вписывание картинки в окно без искажения пропорций.
     def destination(self):
         width, height = self.screen.get_size()
         canvas_width, canvas_height = self.canvas.get_size()
@@ -216,6 +243,7 @@ class App:
         size = (max(1, round(canvas_width * factor)), max(1, round(canvas_height * factor)))
         return pygame.Rect((width - size[0]) // 2, (height - size[1]) // 2, *size)
 
+    # Нажатия мышью по меню и настройкам.
     def click(self, position):
         dest = self.destination()
         if not dest.collidepoint(position):
@@ -254,6 +282,7 @@ class App:
             elif y >= 134:
                 self.key(pygame.K_ESCAPE)
 
+    # Поиск подключённых геймпадов.
     def _refresh_joysticks(self):
         self.joysticks.clear()
         for index in range(pygame.joystick.get_count()):
@@ -261,6 +290,7 @@ class App:
             joystick.init()
             self.joysticks[joystick.get_instance_id()] = joystick
 
+    # События окна, клавиатуры, мыши и геймпада.
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
@@ -305,6 +335,7 @@ class App:
             elif event.button in (2, 3, 4, 5):
                 self.key(pygame.K_TAB)
 
+    # Обновление партии, удержание кнопок, звуки и результаты.
     def advance(self, seconds):
         if self.scene == "playing" and self.game.state == "playing" and self.focused:
             left = bool(self.held_keys & {pygame.K_LEFT, pygame.K_a})
@@ -334,6 +365,7 @@ class App:
                     self.game.move(direction)
                     self.repeat_timer += 0.05
             self.game.tick(seconds, soft)
+        # Звуки партии и переход к результатам.
         if self.game:
             for sound in self.game.events:
                 self.audio.play(sound)
@@ -343,12 +375,14 @@ class App:
                 self.scene = "results"
         self.audio.sync(self.scene, self.scene == "playing" and self.game.state == "paused")
 
+    # Общий заголовок страниц меню.
     def submenu_header(self, title):
         self.canvas.fill(BLACK)
         self.canvas.blit(self.assets.title, (0, 0))
         self.box(0, 58, 160, 86, BLACK)
         self.title_label(title, 62, 0.19)
 
+    # Строка меню с названием и значением.
     def submenu_row(self, name, value, y, selected, value_x=117, scale=0.18, value_scale=0.17):
         if selected:
             self.box(7, y - 1.5, 146, 7, (35, 29, 8))
@@ -357,6 +391,7 @@ class App:
         self.label(name, 18, y, GOLD if selected else WHITE, scale)
         self.label(value, value_x, y, GOLD if selected else WHITE, value_scale)
 
+    # Главное меню и выбор режима.
     def draw_menu(self):
         if self.scene == "main":
             self.canvas.fill(BLACK)
@@ -380,6 +415,7 @@ class App:
             self.label("TAB / ВЛЕВО / ВПРАВО: ЗАДАНИЕ", 8, 128, WHITE, 0.12)
         self.label("ENTER: СТАРТ / ESC: НАЗАД", 8, 136, GOLD, 0.14)
 
+    # Экран настроек и оформления.
     def draw_settings(self):
         if self.scene == "settings":
             self.submenu_header("НАСТРОЙКИ")
@@ -402,6 +438,7 @@ class App:
             self.label("СТРЕЛКИ: ВЫБРАТЬ / ИЗМЕНИТЬ", 9, 134, WHITE, 0.12)
             self.label("ENTER / ESC: НАЗАД", 9, 140, GOLD, 0.12)
 
+    # Один блок фигуры или контур тени.
     def draw_block(self, kind, x, y, ghost=False):
         if ghost:
             color = PIECE_COLORS[kind] if self.settings["colors"] else self.palette[2]
@@ -410,6 +447,7 @@ class App:
             image = self.assets.block(kind, self.settings["colors"], self.settings["palette"])
             self.canvas.blit(image, (round(x * 4), round(y * 4)))
 
+    # Маленькая фигура в панели запаса или очереди.
     def draw_preview(self, kind):
         cells = SHAPES[kind]
         middle_x = (min(x for x, _ in cells) + max(x for x, _ in cells)) / 2
@@ -417,6 +455,7 @@ class App:
         for x, y in cells:
             self.draw_block(kind, 127 + (x - middle_x) * 8, 117 + (y - middle_y) * 8)
 
+    # Поле, фигуры, счётчики и окно паузы или результата.
     def draw_game(self):
         game = self.game
         progress = game.progress
@@ -474,6 +513,7 @@ class App:
         if self.store.error:
             self.label("ОШИБКА СОХРАНЕНИЯ", 12, 137, GOLD, scale=0.13)
 
+    # Выбор и отрисовка текущего экрана.
     def draw(self):
         size = (612, 576) if self.scene in ("playing", "results") else (640, 576)
         if self.canvas.get_size() != size:
@@ -499,6 +539,7 @@ class App:
             self.canvas.blit(overlay, (0, 0))
         return self.canvas
 
+    # Показ готового кадра в окне.
     def present(self):
         self.screen.fill((15, 15, 15))
         dest = self.destination()
@@ -507,38 +548,46 @@ class App:
         self.screen.blit(pygame.transform.scale(self.canvas, dest.size), dest)
         pygame.display.flip()
 
+    # Сохранение кадра в PNG.
     def capture(self, path):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         self.draw()
         pygame.image.save(self.canvas, path)
 
+    # Главный цикл игры.
     def run(self):
         try:
             while self.running:
                 seconds = self.clock.tick(60) / 1000
+                # Ввод игрока и события окна.
                 for event in pygame.event.get():
                     self.handle_event(event)
+                # Обновление, рисование и показ следующего кадра.
                 self.advance(seconds)
                 self.draw()
                 self.present()
         finally:
             self.close()
 
+    # Сохранение настроек и закрытие Pygame.
     def close(self):
         self.store.save()
         pygame.quit()
 
+    # Встроенные проверки интерфейса и игры.
     def self_test(self, directory=None):
         destination = Path(directory) if directory else self.store.directory / "screenshots"
         destination.mkdir(parents=True, exist_ok=True)
         checks = []
 
+        # Проверка условия и запись успешного результата.
         def check(condition, label):
             if not condition:
                 raise AssertionError(label)
             checks.append(label)
 
+        # Тестовое нажатие и отпускание клавиши.
         def press(key):
             self.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key))
             self.handle_event(pygame.event.Event(pygame.KEYUP, key=key))

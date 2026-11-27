@@ -1,3 +1,5 @@
+# Настройки и рекорды. Проверяет и записывает сохранение в JSON.
+
 import json
 import math
 import os
@@ -6,6 +8,7 @@ from pathlib import Path
 from .engine import Mode
 
 
+# Настройки при первом запуске.
 DEFAULT_SETTINGS = {
     "ghost": True,
     "modern": False,
@@ -22,6 +25,7 @@ DEFAULT_SETTINGS = {
 }
 
 
+# Выбор папки для сохранений.
 def default_directory():
     override = os.environ.get("TETRIS_PYGAME_DATA")
     if override:
@@ -30,7 +34,9 @@ def default_directory():
     return base / "GameboyTetrisPygame"
 
 
+# Настройки и рекорды между запусками.
 class Store:
+    # Начальные настройки и путь сохранения.
     def __init__(self, directory=None):
         self.directory = Path(directory) if directory is not None else default_directory()
         self.path = self.directory / "save.json"
@@ -42,6 +48,7 @@ class Store:
         self.error = ""
         self.load()
 
+    # Чтение и проверка сохранённых данных.
     def load(self):
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
@@ -70,6 +77,7 @@ class Store:
         except (OSError, ValueError, TypeError):
             pass
 
+    # Запись настроек и рекордов в файл.
     def save(self):
         data = {
             "version": 1,
@@ -90,6 +98,7 @@ class Store:
             self.error = str(exc)
             return False
 
+    # Обновление рекордов после завершения партии.
     def finish(self, progress):
         self.high_score = max(self.high_score, progress.score)
         self.best_combo = max(self.best_combo, progress.best_combo)

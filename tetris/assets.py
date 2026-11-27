@@ -1,3 +1,5 @@
+# Графика и звук. Картинки, пиксельные буквы, цветные блоки, музыка и эффекты.
+
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -6,8 +8,10 @@ import sys
 import pygame
 
 
+# Пути к картинкам, звуку и данным.
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 ASSETS = ROOT / "assets"
+# Доступные палитры.
 PALETTES = (
     ((224, 248, 207), (134, 192, 108), (48, 104, 80), (7, 24, 33)),
     ((200, 201, 67), (125, 133, 39), (0, 106, 0), (4, 62, 0)),
@@ -16,6 +20,7 @@ PALETTES = (
     ((129, 161, 126), (98, 124, 96), (60, 75, 59), (22, 28, 22)),
 )
 PALETTE_NAMES = ("GB STUDIO", "IVAN SKODJE", "DMG", "POCKET", "GAMEBUINO")
+# Семь цветов фигур.
 PIECE_COLORS = ((67, 215, 245), (255, 170, 65), (94, 134, 255), (255, 97, 132),
                 (183, 123, 255), (92, 220, 142), (255, 220, 89))
 GOLD = (255, 205, 0)
@@ -23,10 +28,13 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
+# Пиксельные буквы для надписей.
 class PixelFont:
+    # Загрузка рисунков букв.
     def __init__(self):
         self.glyphs = json.loads((ASSETS / "font.json").read_text(encoding="utf-8"))
 
+    # Подготовка картинки с текстом.
     @lru_cache(maxsize=512)
     def render(self, text, scale, color):
         text = text.upper()
@@ -47,12 +55,15 @@ class PixelFont:
                         pygame.draw.rect(surface, color, (left, top, max(1, right - left), max(1, bottom - top)))
         return surface
 
+    # Вывод текста на экранную картинку.
     def draw(self, target, text, x, y, color, scale=0.20):
         image = self.render(str(text), scale, tuple(color))
         target.blit(image, (round(x * 4), round(y * 4)))
 
 
+# Картинки, фон, заставка и цветные блоки.
 class Assets:
+    # Загрузка графических ресурсов.
     def __init__(self):
         self.images = {
             name: pygame.image.load(ASSETS / f"{name}.png").convert_alpha()
@@ -61,11 +72,13 @@ class Assets:
         self.title = pygame.transform.scale(self._title(), (640, 440))
         self.font = PixelFont()
 
+    # Восстановление цветной заставки из данных.
     def _title(self):
         data = json.loads((ASSETS / "title_colors.json").read_text(encoding="utf-8"))
         size = (data["width"], data["height"])
         return pygame.image.fromstring(bytes.fromhex(data["rgb"]), size, "RGB").convert_alpha()
 
+    # Чёрный фон игры с красными кирпичными стенками.
     @lru_cache(maxsize=1)
     def game_background(self):
         source = self.images["playing"]
@@ -78,6 +91,7 @@ class Assets:
                 surface.set_at((x - 6, y), (*rgb, 255))
         return pygame.transform.scale(surface, (612, 576))
 
+    # Перекраска старых фонов по палитре.
     @lru_cache(maxsize=24)
     def background(self, name, palette):
         surface = self.images[name].copy()
@@ -89,6 +103,7 @@ class Assets:
                     surface.set_at((x, y), (*PALETTES[palette][nearest], color.a))
         return pygame.transform.scale(surface, (surface.get_width() * 4, surface.get_height() * 4))
 
+    # Подготовка цветного или классического блока.
     @lru_cache(maxsize=48)
     def block(self, kind, colors, palette):
         index = kind if kind <= 5 else 0
@@ -107,7 +122,9 @@ class Assets:
         return pygame.transform.scale(source, (32, 32))
 
 
+# Музыка и звуковые эффекты.
 class Audio:
+    # Загрузка звуков и настройка громкости.
     def __init__(self, settings):
         self.settings = settings
         self.available = pygame.mixer.get_init() is not None
@@ -121,10 +138,12 @@ class Audio:
                     pass
             pygame.mixer.music.set_volume(0.45)
 
+    # Проигрывание короткого звукового эффекта.
     def play(self, name):
         if self.available and self.settings["sound"] and name in self.sounds:
             self.sounds[name].play()
 
+    # Выбор музыки для текущего экрана и обработка паузы.
     def sync(self, scene, paused=False):
         if not self.available:
             return
